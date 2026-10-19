@@ -1,0 +1,49 @@
+# Is file ko GitHub pe .github/workflows/unzip.yml path pe daalo
+# Ye ZIP ko automatically extract karke repo me commit kar dega.
+
+name: Extract ZIP
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'AI-NINJA-TGOWNER.zip'
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: |
+          echo "Before:"
+          ls -la
+          unzip -o AI-NINJA-TGOWNER.zip -d .
+          rm -f AI-NINJA-TGOWNER.zip
+          echo "After:"
+          ls -la
+
+          
+      - name: Commit extracted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "Kuch nahi badla"
+          else
+            git commit -m "Extract project files (Railway ready)"
+            git push
+          fi
+
+      - name: Verify Railway files
+        run: |
+          echo "=== Railway ke liye zaroori files ==="
+          for f in Dockerfile.slim railway.json requirements.txt server.py agent.py; do
+            if [ -f "$f" ]; then echo "✅ $f"; else echo "❌ MISSING: $f"; fi
+          done
