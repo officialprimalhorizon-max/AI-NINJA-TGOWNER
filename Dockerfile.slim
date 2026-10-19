@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1
+# =============================================================================
+#  SLIM image — Railway / Render / chhoti RAM ke liye BEST
+#
+#  Kya hai:    Python 3.12 + Node.js (JS ke liye)
+#  Kya nahi:   Java, C/C++, Rust, Go, PHP, Ruby  -> wo FULL Dockerfile me hain
+#  Size:       ~250-300 MB (full image ~1.2 GB)
+#  RAM:        idle ~90-110 MB -> Railway Free ($1 ke andar) me fit
+#
+#  Railway me railway.json isi ko point karta hai.
+#  Poora multi-language chahiye to Dockerfile use karo (VPS/oracle ke liye).
+# =============================================================================
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    DATA_DIR=/data \
+    PORT=8080
+
+# sirf halka stuff: JS runtime + git/curl
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        nodejs \
+        git curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+RUN mkdir -p /data && useradd -m -u 10001 agent && chown -R agent:agent /app /data
+USER agent
+
+EXPOSE 8080
+
+# 1 worker + threads (SSE streaming ke liye). Railway $PORT inject karta hai.
+CMD gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 16 \
+    --worker-class gthread --timeout 900 --graceful-timeout 30 \
+    --access-logfile - --error-logfile - server:app

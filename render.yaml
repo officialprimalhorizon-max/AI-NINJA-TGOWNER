@@ -1,0 +1,42 @@
+# =============================================================================
+#  RENDER — TRULY FREE deploy (no credit card, no trial expiry)
+#
+#  Free Web Service: 512 MB RAM, 0.1 CPU, 750 instance-hours/month
+#  Sleeps after 15 min idle -> first request ~1 min (cold start)
+#  No persistent disk on free plan -> redeploy pe chats/files reset
+#
+#  Use:
+#    1. GitHub pe repo push karo
+#    2. render.com -> New -> Blueprint -> repo chuno  (render.yaml auto-detect)
+#    3. Variables me APP_PASSWORD + GROQ_API_KEY daalo
+# =============================================================================
+
+services:
+  - type: web
+    name: superagent
+    runtime: docker
+    plan: free
+    region: singapore          # India ke sabse kareeb
+    dockerfilePath: ./Dockerfile.slim
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      # --- zaroori: deploy ke baad Render dashboard me value daalo ---
+      - key: APP_PASSWORD
+        sync: false
+        generateValue: true    # Render khud strong password bana dega
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATA_DIR
+        value: /tmp/data       # free plan me persistent disk nahi -> tmp
+      - key: PORT
+        value: 8080
+
+      # --- AI provider (dashboard me paste karo) ---
+      # Groq free key: https://console.groq.com/keys  (1-2 sec speed)
+      - key: GROQ_API_KEY
+        sync: false
+      # Khali chhodne pe app keyless Pollinations mode chalayega (slow but zero setup)
+      - key: GEMINI_API_KEY
+        sync: false

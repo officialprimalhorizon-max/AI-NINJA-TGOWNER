@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+data/
+workspace/
+__pycache__/
+*.pyc
+*.log
+logs/
+.venv
+.DS_Store
