@@ -34,6 +34,34 @@ Settings → Networking → **Generate Domain**
 
 ---
 
+## ⚡ Speed tuning (Ollama local)
+
+Poori guide: **`SPEED.md`**
+
+Chhota version — `.env` me ye add karo:
+
+```env
+OLLAMA_NUM_CTX=4096
+OLLAMA_NUM_THREAD=24
+OLLAMA_NUM_PREDICT=1400
+```
+
+Aur Ollama is tarah start karo:
+```bash
+OLLAMA_KEEP_ALIVE=-1 OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve
+```
+
+Model preload (cold start khatam):
+```bash
+curl -s localhost:11434/api/generate \
+  -d '{"model":"qwen2.5-coder:7b","prompt":"hi","stream":false,"keep_alive":-1,"options":{"num_predict":1}}'
+```
+
+**Model speed (CPU):** 1.5b = 60-90 tok/s · 3b = 30-50 · **7b = 12-22 ← best** · 14b = 6-10
+
+
+---
+
 ## 🖥️ Kisi bhi VPS / box pe (one command)
 
 Box pe root ke roop me:

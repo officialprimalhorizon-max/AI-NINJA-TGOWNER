@@ -449,6 +449,42 @@ class Provider:
         return f"{self.name}:{self.model} ({masked})"
 
 
+
+# ─────────────────────────────────── Ollama speed tuning
+def _ollama_options() -> dict:
+    """CPU inference ke liye tuned options.
+
+    num_ctx      : chhota context = tez prompt processing (default 4096)
+    num_predict  : jawab ki max length — model rambling nahi karega
+    num_thread   : 96-core EPYC pe sab cores dene se thrashing hoti hai;
+                   memory-bandwidth ke hisaab se 16-24 best rehta hai
+    """
+    def _i(k, d):
+        try:
+            return int(os.getenv(k, d))
+        except Exception:
+            return d
+
+    opts = {
+        "num_ctx": _i("OLLAMA_NUM_CTX", 4096),
+        "num_predict": _i("OLLAMA_NUM_PREDICT", 1400),
+        "temperature": 0.25,
+        "top_p": 0.9,
+        "repeat_penalty": 1.05,
+    }
+    nt = _i("OLLAMA_NUM_THREAD", 0)
+    if nt > 0:
+        opts["num_thread"] = nt
+    return opts
+
+
+def _extra(p) -> dict:
+    """Ollama ke liye options bhejo; baaki providers ke liye kuch nahi."""
+    if p.name == "ollama":
+        return {"extra_body": {"options": _ollama_options()}}
+    return {}
+
+
 def build_pool(preferred: str | None = None, model_override: str | None = None) -> list[Provider]:
     """Providers ko try-order me daalo.
 
@@ -483,7 +519,15 @@ def build_pool(preferred: str | None = None, model_override: str | None = None) 
     pool: list[Provider] = []
     for name in order:
         preset = PRESETS[name]
-        model = model_override or os.getenv("AGENT_MODEL") or preset["model"]
+        # AGENT_MODEL sirf LOCAL providers pe lagta hai (ollama/custom).
+        # Cloud providers apna preset model use karte hain — warna fallback
+        # "qwen2.5-coder:7b" jaisa invalid model bhejke fail ho jata hai.
+        if model_override:
+            model = model_override
+        elif name in ("ollama", "custom"):
+            model = os.getenv("AGENT_MODEL") or preset["model"]
+        else:
+            model = preset["model"]
 
         if name == "custom":
             base = os.getenv("CUSTOM_BASE_URL", preset["base_url"])
@@ -558,8 +602,9 @@ class AgentState:
             messages=self.messages,
             tools=TOOLS,
             tool_choice="auto",
-            temperature=0.3,
+            temperature=0.25,
             stream=True,
+            **_extra(p),
         )
         parts, calls = [], {}
         for chunk in stream:
@@ -624,7 +669,8 @@ class AgentState:
                     messages=self.messages,
                     tools=TOOLS,
                     tool_choice="auto",
-                    temperature=0.3,
+                    temperature=0.25,
+                    **_extra(p),
                 )
             except (RateLimitError, APIStatusError, APIConnectionError) as e:
                 msg = str(e)
