@@ -34,6 +34,25 @@ Settings → Networking → **Generate Domain**
 
 ---
 
+## 🖥️ Kisi bhi VPS / box pe (one command)
+
+Box pe root ke roop me:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/officialprimalhorizon-max/AI-NINJA-TGOWNER/main/deploy/setup-this-box.sh)
+```
+
+Ye khud: python+node install -> Ollama install -> model pull -> repo clone ->
+venv+deps -> server start -> free public URL (cloudflared) print karta hai.
+
+Options:
+```bash
+bash deploy/setup-this-box.sh --model qwen2.5-coder:14b --port 8000
+bash deploy/setup-this-box.sh --no-tunnel        # sirf localhost
+```
+
+---
+
 ## 💻 Local pe chalana
 
 ```bash
